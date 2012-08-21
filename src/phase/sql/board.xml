@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" 
+ "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="board">
+	<typeAlias alias="BoardClass" type="phase.model.BoardVO"/>
+	<typeAlias alias="ReplyClass" type="phase.model.ReplyVO"/>
+	
+	<resultMap id="boardMap" class="BoardClass">
+	    <result property="seq" column="seq"/>
+	    <result property="boardNum" column="board_num"/>
+	    <result property="title" column="title"/>
+	    <result property="content" column="content"/>
+	    <result property="viewEnable" column="view_enable"/>
+	    <result property="fileData" column="file_data"/>
+	    <result property="writer" column="writer"/>
+	    <result property="indate" column="indate"/>
+	    <result property="password" column="password"/>
+	    <result property="hit" column="hit"/>
+	    <result property="principle" column="principle"/>
+	    <result property="reply" column="reply"/>
+	</resultMap>
+	
+	<resultMap id="ReplyMap" class="ReplyClass" >
+	    <result property="seq" column="seq"/>
+	    <result property="boardNum" column="board_num"/>
+	    <result property="content" column="content"/>
+	    <result property="userId" column="user_id"/>
+	    <result property="principle" column="principle"/>
+	    <result property="viewEnable" column="view_enable"/>
+	    <result property="indate" column="indate"/>
+	    <result property="rseq" column="rseq"/>
+	</resultMap>
+	
+	<select id="getBoardList" resultMap="boardMap">
+	    SELECT * 
+		FROM(
+		    SELECT ceil(ROWNUM/10) rnum, seq, board_num, title, content, view_enable, file_data, writer, indate, password, hit,principle,reply 
+			FROM COMBINE_BOARD 
+			WHERE view_enable = 1
+				<isNotEqual property="searchData" compareValue="">		    
+					<isEqual property="search" compareValue="searchWriter"> 
+					    AND writer = #searchData#
+					</isEqual>
+					<isEqual property="search" compareValue="searchTitle"> 
+						AND title like '%'||#searchData#||'%'
+					</isEqual>
+					<isEqual property="search" compareValue="searchContent"> 
+						AND content like '%'||#searchData#||'%'
+					</isEqual>
+				</isNotEqual>
+				<isNotNull property="preDate">
+					AND indate>=TO_DATE(#preDate#)
+				</isNotNull>
+				<isNotNull property="postDate">
+					AND indate &lt;=TO_DATE(#postDate#)
+				</isNotNull>
+				AND board_num = #boardNum#
+			ORDER BY seq DESC
+			)WHERE rnum =#page#
+	</select>
+	<select id="getBoardTotalCount" resultClass="Integer">
+	     SELECT COUNT(*) 
+			FROM COMBINE_BOARD 
+			WHERE view_enable = 1
+				<isNotEqual property="searchData" compareValue="">		    
+					<isEqual property="search" compareValue="searchWriter"> 
+					    AND writer = #searchData#
+					</isEqual>
+					<isEqual property="search" compareValue="searchTitle"> 
+						AND title like '%'||#searchData#||'%'
+					</isEqual>
+					<isEqual property="search" compareValue="searchContent"> 
+						AND content like '%'||#searchData#||'%'
+					</isEqual>
+				</isNotEqual>
+				<isNotNull property="preDate">
+					AND indate>=TO_DATE(#preDate#)
+				</isNotNull>
+				<isNotNull property="postDate">
+					AND indate &lt;=TO_DATE(#postDate#)
+				</isNotNull>
+				AND board_num = #boardNum#
+	</select>
+	<select id="getBoardItem" resultMap="boardMap">
+	    SELECT * 
+	    FROM COMBINE_BOARD
+	    WHERE seq = #seq# 
+	    	AND board_num = #boardNum#
+	</select>
+	<insert id="insertBoardContent">
+	    INSERT INTO COMBINE_BOARD
+	    VALUES(#seq#,#boardNum#,#title#,#content#,1,#fileData#,#writer#,sysdate,null,0,#principle#,0)
+	</insert>
+	<select id="getSeqNum" resultClass="Integer">
+	    SELECT COUNT(*)
+	    FROM COMBINE_BOARD
+	    WHERE board_num = #boardNum# 
+	</select>
+	<update id="deleteBoardContent">
+	    UPDATE COMBINE_BOARD 
+	    SET view_enable = 0
+	    WHERE board_num =#boardNum# 
+	   		AND seq = #seq#
+	</update>
+	<update id="modifyBoardContent">
+	    UPDATE COMBINE_BOARD
+	    SET title=#title#, content=#content#,file_data=#fileData#
+	    WHERE board_num =#boardNum# 
+	   		AND seq = #seq#
+	</update>
+	
+	<select id="checkModifableUser" resultClass="String">
+	    SELECT 'EXIST'
+	    FROM COMBINE_BOARD
+	    WHERE board_num = #boardNum#
+	    	AND seq = #seq#
+	    	AND principle = #principle#
+	</select>
+	
+	<update id="addCountBoardHit">
+	    UPDATE COMBINE_BOARD
+	    SET hit = hit +1
+	    WHERE board_num = #boardNum#
+	    	AND seq = #seq#
+	</update>
+	
+	<select id="getReplyList" resultMap="ReplyMap">
+	    SELECT *
+	    FROM COMBINE_BOARD_REPLY
+	    WHERE board_num = #boardNum#
+	    	And seq = #seq#
+	    ORDER BY indate 
+	</select>
+	
+	<insert id="insertReply">
+	    INSERT INTO COMBINE_BOARD_REPLY
+	    VALUES(#boardNum#,#seq#,#principle#,#userId#,#content#,1,sysdate,
+	    (SELECT COUNT(*)
+		FROM UPDATE COMBINE_BOARD_REPLY
+		WHERE board_num = #boardNum#
+	    	AND seq = #seq#)+1
+	    	)
+	</insert>
+	
+	<update id="modifyReplyCount">
+	    UPDATE COMBINE_BOARD
+	    SET reply = reply+#reply#
+	    WHERE board_num = #boardNum#
+	    	AND seq = #seq#
+	</update>
+	
+	<update id="modifyReplyItem">
+	    UPDATE COMBINE_BOARD_REPLY
+	    SET CONTENT = #content#
+	    WHERE board_num = #boardNum#
+	    	AND seq = #seq#
+	    	AND rseq = #rseq#
+	</update>
+	
+	<update id="deleteReplyItem"> 
+	    UPDATE COMBINE_BOARD_REPLY
+	    SET view_enable = 0
+	    WHERE board_num = #boardNum#
+	    	AND seq = #seq#
+	    	AND rseq = #rseq#
+	</update>
+</sqlMap>

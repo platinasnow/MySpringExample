@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" 
+ "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="admin">
+	<typeAlias alias="userInfoClass" type="phase.model.UserInfoVO"/>
+	<typeAlias alias="userAuthorityClass" type="phase.model.UserAuthorityVO"/>
+	
+	<resultMap id="userInfo" class="userInfoClass">
+		<result property="userId" column="userid"/>
+		<result property="email" column="email"/>
+		<result property="name" column="name"/>
+		<result property="indate" column="indate"/>
+		<result property="block" column="block"/>
+		<result property="permit" column="permit"/>
+		<result property="authority" column="authority"/>
+		<result property="principle" column="principle"/>
+	</resultMap>
+	<resultMap id="userAuthority" class="userAuthorityClass">
+		<result property="userId" column="userid"/>
+		<result property="authority" column="authority" />
+	</resultMap>
+	
+	<select id="getUserInfoList" resultMap="userInfo" >
+		SELECT * 
+		FROM(
+		    SELECT ceil(ROWNUM/10) rnum, rep.userId,email,name,indate,block,permit,authority,rep.principle
+			FROM USER_REPOSITORY rep , USER_AUTHORITIES auth 
+			WHERE rep.userid = auth.userid 
+				<isEqual property="viewGroup" compareValue="permit">
+					AND permit = 0		    
+				</isEqual>
+				<isEqual property="viewGroup" compareValue="block"> 
+					AND block = 1		    
+				</isEqual>
+				<isNotEqual property="searchData" compareValue="">		    
+					<isEqual property="search" compareValue="searchId"> 
+					    AND rep.userId = #searchData#
+					</isEqual>
+					<isEqual property="search" compareValue="searchName"> 
+						AND name = #searchData#
+					</isEqual>
+				</isNotEqual>
+				<isNotNull property="preDate">
+					AND indate>=TO_DATE(#preDate#)
+				</isNotNull>
+				<isNotNull property="postDate">
+					AND indate &lt;=TO_DATE(#postDate#)
+				</isNotNull>
+			ORDER BY indate
+			)WHERE rnum =#page#
+	</select>
+	
+	<select id="getUserInfoTotalCount" resultClass="Integer">
+	    SELECT COUNT(*)
+	    FROM USER_REPOSITORY
+	    WHERE principle > 0
+	    	<isEqual property="viewGroup" compareValue="permit">
+				AND permit = 0		    
+			</isEqual>
+			<isEqual property="viewGroup" compareValue="block">
+				AND block = 1		    
+			</isEqual>
+				<isNotEqual property="searchData" compareValue="" >
+						<isEqual property="search" compareValue="searchId"> 
+							AND userId = #searchData#
+						</isEqual>
+						<isEqual property="search" compareValue="searchName"> 
+							AND name = #searchData#
+						</isEqual>
+				</isNotEqual>
+				<isNotNull property="preDate">
+					AND indate>=TO_DATE(#preDate#)
+				</isNotNull>
+				<isNotNull property="postDate">
+					AND indate &lt;=TO_DATE(#postDate#)
+				</isNotNull>
+	</select>
+	
+	<update id="joinAcception" >
+	    UPDATE USER_REPOSITORY
+        SET permit = 1
+        WHERE userId = #userId#
+	</update>
+	
+	<update id="blockUser" >
+	    UPDATE USER_REPOSITORY
+        SET block = 1
+        WHERE userId = #userId#
+	</update>
+	
+	<update id="unblockUser" >
+	    UPDATE USER_REPOSITORY
+        SET block = 0
+        WHERE userId = #userId#
+	</update>
+	
+	<update id="changeAuthority">
+	    UPDATE USER_AUTHORITIES
+	    SET authority =#authority#
+	    WHERE userId = #userId#
+	</update>
+	
+	<select id="getUserIdByPrincipal" resultClass="String">
+	    SELECT userId 
+	    FROM USER_AUTHORITIES
+	    WHERE principle = #principle#
+	</select>
+	
+	<select id="getUserAuthorityByUserId" resultClass="String">
+		SELECT authority
+		FROM USER_AUTHORITIES
+	    WHERE userid=#userId#
+	</select>
+</sqlMap>

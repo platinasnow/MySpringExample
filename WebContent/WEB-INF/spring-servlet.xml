@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:p="http://www.springframework.org/schema/p" 
+		xmlns:context="http://www.springframework.org/schema/context"
+		xmlns:tx="http://www.springframework.org/schema/tx"
+		xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+			http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
+			http://www.springframework.org/schema/tx
+			http://www.springframework.org/schema/tx/spring-tx-3.1.xsd">
+
+	<!-- example 패키지의 빈을 자동으로 생성  -->
+	<context:component-scan base-package="phase" />
+	
+	<!-- 타일즈 설정 -->
+	<bean id="tilesConfigurer" class="org.springframework.web.servlet.view.tiles2.TilesConfigurer">
+		<property name="definitions">
+			<list>
+				<value>/WEB-INF/configuration/tiles.xml</value>
+			</list>
+		</property>
+	</bean>
+ 
+	<!-- 타일즈 뷰 리졸버 설정 -->
+	<bean id="tilesViewResolver" class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+		<property name="viewClass" value="org.springframework.web.servlet.view.tiles2.TilesView"/>
+	</bean>
+	
+	<bean id="dataSource" class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
+	<property name="driverClass" value="oracle.jdbc.driver.OracleDriver"/>
+		<property name="url" value="jdbc:oracle:thin:@211.212.156.51:1521:orcl"/>
+		<property name="username" value="pla01"/>
+		<property name="password" value="kurenai0"/>
+	</bean>
+ 
+	<!-- SqlMapClient 설정 -->
+	<bean id="sqlMapClient" class="org.springframework.orm.ibatis.SqlMapClientFactoryBean">
+		<property name="configLocation" value="/WEB-INF/configuration/sqlMapConfig.xml" />
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+
+	<!-- 스프링에서 지원하는 ibatis 템플릿 인터페이스 -->
+	<bean id="sqlMapClientTemplate"
+		class="org.springframework.orm.ibatis.SqlMapClientTemplate">
+		<property name="sqlMapClient" ref="sqlMapClient" />
+	</bean>
+
+	<!-- 트랜잭션 매니저 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+
+	<!-- Annotation 기반 트랜잭션 설정 -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	
+</beans>

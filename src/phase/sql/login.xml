@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" 
+ "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="login">
+	<typeAlias alias="userInfoClass" type="phase.model.UserInfoVO"/>
+	<typeAlias alias="userAuthorityClass" type="phase.model.UserAuthorityVO"/>
+	
+	<resultMap id="userInfo" class="userInfoClass">
+		<result property="userId" column="userid"/>
+		<result property="password" column="password"/>
+		<result property="email" column="email"/>
+		<result property="name" column="name"/>
+		<result property="indate" column="indate"/>
+		<result property="block" column="block"/>
+		<result property="permit" column="permit"/>
+		<result property="principle" column="principle"/>
+	</resultMap>
+	<resultMap id="userAuthority" class="userAuthorityClass">
+		<result property="userId" column="userid"/>
+		<result property="principle" column="principle"/>
+		<result property="authority" column="authority" />
+	</resultMap>
+
+ 	<insert id="insertAccount" parameterClass="userInfoClass" >
+ 		INSERT INTO USER_REPOSITORY
+ 		VALUES(#userId#,#password#,#email#,sysdate,0,#name#,0,#principle#)
+ 	</insert>
+ 	
+ 	<insert id="insertAuthority" parameterClass="userInfoClass">
+ 		INSERT INTO USER_AUTHORITIES
+ 		VALUES(#principle#,#userId#,'ROLE_USER')
+ 	</insert>
+ 	
+ 	<select id="getUserInfoCount" resultClass="Integer">
+ 		SELECT COUNT(*)
+ 		FROM USER_REPOSITORY 
+ 	</select>
+	
+ 	<select id="validationUserId" parameterClass="String" resultClass="String">
+ 	    SELECT 'EXIST' AS userId 
+ 	    FROM USER_REPOSITORY
+ 	    WHERE USERID = #userId#
+ 	</select>	
+</sqlMap>
